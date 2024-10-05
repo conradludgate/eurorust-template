@@ -1,0 +1,9 @@
+[package]
+name = "project_01_future"
+version = "0.0.1"
+license.workspace = true
+edition.workspace = true
+
+[dependencies]
+tokio = { version = "1.40", features = ["rt-multi-thread", "sync", "time", "macros"] }
+pin-project-lite = "0.2"
