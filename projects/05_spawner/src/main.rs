@@ -1,4 +1,4 @@
-use std::{future::Future, task::Poll, time::Instant};
+use std::future::Future;
 
 pub fn block_on<F: Future>(_f: F) -> F::Output {
     todo!()
@@ -9,40 +9,29 @@ pub fn spawn<F: Future<Output = ()> + Send + 'static>(_f: F) {
 }
 
 fn main() {
-    let start = std::time::Instant::now();
+    block_on(async move {
+        let (watch_tx, watch_rx) = tokio::sync::watch::channel(true);
 
-    let _woken = block_on(async move {
         for i in 0..10 {
+            let mut watch_rx = watch_rx.clone();
             spawn(async move {
-                bad_sleep(start + std::time::Duration::from_secs(1)).await;
+                // wait until we are no longer running
+                watch_rx.wait_for(|running| !*running).await.unwrap();
+                // bad_sleep(start + std::time::Duration::from_secs(1)).await;
                 println!("completed {i}")
             });
         }
 
-        bad_sleep(start + std::time::Duration::from_secs(2)).await
+        let (tx, rx) = tokio::sync::oneshot::channel();
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_secs(2));
+            watch_tx.send(false).unwrap();
+            std::thread::sleep(std::time::Duration::from_secs(2));
+            tx.send(()).unwrap();
+        });
+
+        rx.await.unwrap();
     });
 
     println!("done");
-}
-
-/// Sleep until the deadline, returning the time we actually woke up.
-async fn bad_sleep(deadline: Instant) -> Instant {
-    std::future::poll_fn(|cx| {
-        let now = std::time::Instant::now();
-        if deadline < now {
-            return Poll::Ready(now);
-        }
-
-        let waker = cx.waker().clone();
-
-        // spawn a new thread to run the sleep.
-        std::thread::spawn(move || {
-            std::thread::sleep(deadline - now);
-            // wake up the task after the sleep
-            waker.wake();
-        });
-
-        Poll::Pending
-    })
-    .await
 }

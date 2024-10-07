@@ -121,10 +121,16 @@ dependencies = [
 [[package]]
 name = "project_04_pollster"
 version = "0.0.1"
+dependencies = [
+ "tokio",
+]
 
 [[package]]
 name = "project_05_spawner"
 version = "0.0.1"
+dependencies = [
+ "tokio",
+]
 
 [[package]]
 name = "project_06_timers"
