@@ -1,4 +1,35 @@
-use std::{sync::Arc, time::Duration};
+use std::{
+    cell::UnsafeCell,
+    ops::{Deref, DerefMut},
+    sync::Arc,
+    time::Duration,
+};
+
+struct AsyncMutex<T> {
+    data: UnsafeCell<T>,
+}
+
+struct AsyncMutexGuard<'a, T> {
+    mutex: &'a AsyncMutex<T>,
+}
+
+// Safety: We are a mutex :)
+unsafe impl<T: Send> Send for AsyncMutex<T> {}
+unsafe impl<T: Send> Sync for AsyncMutex<T> {}
+unsafe impl<T: Sync + Send> Sync for AsyncMutexGuard<'_, T> {}
+
+impl<T> Deref for AsyncMutexGuard<'_, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*self.mutex.data.get() }
+    }
+}
+impl<T> DerefMut for AsyncMutexGuard<'_, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { &mut *self.mutex.data.get() }
+    }
+}
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
