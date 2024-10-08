@@ -17,7 +17,6 @@ fn main() {
             spawn(async move {
                 // wait until we are no longer running
                 watch_rx.wait_for(|running| !*running).await.unwrap();
-                // bad_sleep(start + std::time::Duration::from_secs(1)).await;
                 println!("completed {i}")
             });
         }
